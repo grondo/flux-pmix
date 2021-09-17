@@ -25,13 +25,16 @@ jobs:
       fail-fast: false
     name: ${{ matrix.image }}
     steps:
-    - uses: actions/checkout@v2
+    - name: checkout
+      uses: actions/checkout@v2
       with:
        ref: ${{ github.event.pull_request.head.sha }}
        fetch-depth: 0
 
     - name: docker-run-checks
-      run: ./src/test/docker/docker-run-checks.sh -j2 -i${{ matrix.image }} --
+      run: >
+        ./src/test/docker/docker-run-checks.sh -j2
+        -i ${{ matrix.image }} --
 
     - name: annotate errors
       if: failure() || cancelled()
