@@ -39,6 +39,11 @@ jobs:
           coverage: false
           env:
             DISTCHECK: t
+        - name: "centos8 - ompi v4.1.x"
+          image: "centos8"
+          ompi_branch: "v4.0.x"
+          coverage: false
+          env: {}
         - name: "coverage"
           image: "focal"
           ompi_branch: "v5.0.x"
