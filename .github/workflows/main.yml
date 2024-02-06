@@ -34,6 +34,7 @@ jobs:
           ompi_branch: "v5.0.0rc12"
           openpmix_branch: "v4.2.3"
           coverage: false
+          create_release: true
           env:
             DISTCHECK: t
         - name: "el8 - pmix v3.2.3, ompi v4.1.4"
@@ -89,6 +90,22 @@ jobs:
        ref: ${{ github.event.pull_request.head.sha }}
        fetch-depth: 0
 
+    - name: fetch annotated tag
+      if: matrix.create_release && startswith(github.ref, 'refs/tags')
+      run: |
+        # Ensure git-describe works on a tag.
+        #  (checkout@v4 action may have left current tag as
+        #   lightweight instead of annotated. See
+        #   https://github.com/actions/checkout/issues/290)
+        #
+        echo github.ref == ${{ github.ref }} ;
+        git fetch -f origin ${{ github.ref }}:${{ github.ref }} ;
+        echo git describe now reports $(git describe --always)
+
+    - name: get tag name
+      id: tag
+      run: echo "TAG=${GITHUB_REF/refs\/tags\//}" >$GITHUB_OUTPUT
+
     - name: docker-run-checks
       env: ${{ matrix.env }}
       run: >
@@ -108,3 +125,19 @@ jobs:
       env:
         DOCKER_REPO:
       uses: codecov/codecov-action@858dd794fbb81941b6d60b0dca860878cba60fa9 # v3.1.1
+
+    - name: create release
+      id: create_release
+      if: |
+        success()
+        && matrix.create_release
+        && startswith(github.ref, 'refs/tags')
+        && github.repository == 'flux-framework/flux-pmix'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag.output.TAG }}
+        name: flux-pmix ${{ steps.tag.output.TAG }}
+        prerelease: true
+        files: flux-pmix*.tar.gz
+        body: |
+          View [Release Notes](https://github.com/${{ github.repository }}/blob/${{ matrix.tag }}/NEWS.md) for flux-pmix ${{ steps.tag.output.TAG }}
